@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma todo-list version 2</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-10 offset-1">
+                <h1>Ma todo list version 2</h1>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Id</th>
+                            <th scope="col">Tâche</th>
+                            <th scope="col"></th>
+                            <th scope="col">Date</th>
+                            <th scope="col">
+                                <button class="btn btn-danger btn-sm" type="button" name="deleteDone"
+                                    onclick="deleteDoneTodos()">Supprimer les done</button>
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="todoRows">
+                    </tbody>
+
+                    <tfoot>
+                        <tr>
+                            <td colspan="3">
+                                <input type="text" class="form-control" name="description" id="description">
+                            </td>
+                            <td>
+                                <input type="color" name="color" id="color" value="black">
+                                <button type="button" class="btn btn-primary mb-2"
+                                    onclick="saveTodo()">Enregistrer</button>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // chargement des todos et affichage des todos dans le tableau
+        function loadTodos() {
+            fetch("/todos")
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (todos) {
+                    console.log(todos)
+                    document.getElementById("todoRows").innerHTML = ""
+
+
+                    for (const todo of todos) {
+
+                        let row = document.createElement("tr");
+                        let cell1 = document.createElement("td");
+                        let cell2 = document.createElement("td");
+                        let cell3 = document.createElement("td");
+                        let cell4 = document.createElement("td");
+                        let checkbox = document.createElement("input");
+
+                        if (todo.done) {
+                            row.style.textDecoration = "line-through"
+                            checkbox.setAttribute("checked", "true")
+                        }
+
+                        row.style.color = todo.color
+
+
+                        cell1.innerHTML = todo.id
+                        cell2.innerHTML = todo.tache
+                        cell4.innerHTML = dayjs(todo.date).format("DD/MM/YYYY HH:mm")
+                        checkbox.setAttribute("type", "checkbox");
+                        checkbox.setAttribute("onclick", "setDoneTodo(" + todo.id + ",this.checked)");
+                        cell3.appendChild(checkbox);
+
+
+                        row.appendChild(cell1);
+                        row.appendChild(cell2);
+                        row.appendChild(cell3);
+                        row.appendChild(cell4);
+
+                        document.getElementById("todoRows").appendChild(row);
+
+                    }
+                })
+        }
+        // enregistrement d'une todo
+        function saveTodo() {
+
+            fetch("/todo", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+
+                    tache: document.getElementById("description").value,
+                    color: document.getElementById("color").value
+
+                }
+                )
+            })
+            loadTodos();
+            document.getElementById("description").value = ""
+        }
+
+
+        // modification d'une todo
+        function setDoneTodo(id, done) {
+            fetch("/todo/" + id, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+
+                    done: done
+
+                })
+            })
+            loadTodos();
+
+        }
+
+        // suppression des todos dont done est à true
+        function deleteDoneTodos() {
+            fetch("/todos", {
+                method: "DELETE"
+            })
+            loadTodos();
+        }
+
+        // appelé au chargement de la page
+        loadTodos(); 
+    </script>
+
+</body>
+
+</html>
